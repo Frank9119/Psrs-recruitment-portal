@@ -1,3 +1,7 @@
+# Ignore Django migration files
+*/migrations/*.py
+!*/migrations/__init__.py
+
 # Python
 __pycache__/
 *.py[cod]
@@ -8,6 +12,26 @@ __pycache__/
 media/
 staticfiles/
 .env
+
+# Ignore Django migration files
+*/migrations/*.py
+!*/migrations/__init__.py
+
+.gitlab-ci.yml.bak
+
+*.log
+*.pot
+*.pyc
+.flake8
+__pycache__/
+local_settings.py
+db.sqlite3
+*/db.sqlite3/
+db.sqlite3-journal
+
+output_file.sql
+
+*/migrations/
 
 # Virtual environment
 venv/
