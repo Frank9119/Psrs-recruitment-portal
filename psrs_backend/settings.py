@@ -38,9 +38,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt',
     # custom apps
     'psrs_auth',
     'psrs_job',
+
 
 ]
 
@@ -68,7 +70,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
             ],
         },
-    },
+    }, 
 ]
 
 WSGI_APPLICATION = 'psrs_backend.wsgi.application'
@@ -79,7 +81,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'psrs_db',
-        'USER': 'root',
+        'USER': 'root',    
         'PASSWORD': 'eG@_2026',
         'HOST': '127.0.0.1',
         'PORT': '3306',
@@ -131,3 +133,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 ## define custom user models
 AUTH_USER_MODEL = 'psrs_auth.User'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
