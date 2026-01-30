@@ -9,6 +9,7 @@ from .models import UserProfile
 User = get_user_model()
 
 
+# create Serializers For Email Authentications
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     username_field = User.EMAIL_FIELD
     email = serializers.EmailField(required=True)
@@ -57,4 +58,10 @@ class RegisterSerializers(serializers.ModelSerializer):
         )
 
         return user
+
+
+## create the serializer for Reset Password
+class PasswordResetSerializers(serializers.Serializer):
+    email = serializers.CharField(required=True)
+    new_password = serializers.CharField(write_only=True)
 
