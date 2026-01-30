@@ -1,10 +1,14 @@
 from django.urls import path
 from . import views
 
+from rest_framework.routers import DefaultRouter
+from.views import JobApplicationViewSet, JobViewSet
+
+
+router = DefaultRouter()
+router.register('jobs', JobViewSet )
+router.register('applications', JobApplicationViewSet)
 
 
 # URL Configurations
-urlpatterns = [
-    path('jobs/', views.get_jobs_list),
-    path('applications/<id>/', views.get_applications_list),
-]
+urlpatterns = router.urls

@@ -27,8 +27,8 @@ class UserAdmin(BaseUserAdmin):
                     "last_name", 
                     "email",
                     "role",
-                    "password1",
-                    "password2",
+                    # "password1",
+                    # "password2",
 
                 ),
 
@@ -45,8 +45,8 @@ class UserAdmin(BaseUserAdmin):
                     "last_name", 
                     "email",
                     "role",
-                    "password1",
-                    "password2",
+                    # "password1",
+                    # "password2",
 
                 ),
             }

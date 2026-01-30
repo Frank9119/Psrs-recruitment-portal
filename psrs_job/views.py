@@ -1,17 +1,31 @@
-from django.shortcuts import render
-from django.http import HttpResponse
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import IsAuthenticated
 
-## djangorestframework
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
+from psrs_job.serializers import JobsApplicationsSerializer, JobSerializer
+from .permission import IsApplicant, IsAdmin, IsRecuiter
+from .models import Job, JobsApplications
+
 
 
 
 # Create your views here.
-@api_view()
-def get_jobs_list(request):
-    return Response('Operation Successfully')
+class JobViewSet(ModelViewSet):
+    queryset = Job.objects.all()
+    serializer_class = JobSerializer
+    permission_classes = [IsAuthenticated, IsApplicant]
+    
 
-@api_view()
-def get_applications_list(request, id):
-    return Response(id)
+
+
+class JobApplicationViewSet(ModelViewSet):
+    queryset = JobsApplications.objects.all()
+    serializer_class = JobsApplicationsSerializer
+    permission_classes = [IsAuthenticated, IsApplicant]
+
+    def get_queryset(self):
+        return JobsApplications.objects.filter(applicant__user=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(applicant=self.request.user.profile)
+
+     
