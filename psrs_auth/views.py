@@ -41,3 +41,8 @@ class ResetPasswordView(APIView):
 
         except User.DoesNotExist:
             return Response({'error': "User Not Found"}, status=404)
+
+
+## Adding login page
+def index(request):
+    return render(request,'../psrs_templates/loginPage.html',{'name':"Login or Signup"})

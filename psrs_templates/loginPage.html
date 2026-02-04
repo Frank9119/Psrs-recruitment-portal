@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Login | Register</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<style>
+/* ─── Reset & Root ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --clr-bg:        #0f0f1a;
+  --clr-panel:     #1c1c2e;
+  --clr-accent:    #e8601c;
+  --clr-accent2:   #f09040;
+  --clr-text:      #eee;
+  --clr-text-dim:  #999;
+  --clr-input-bg:  rgba(255,255,255,.04);
+  --clr-border:    rgba(232,96,28,.35);
+  --clr-glow:      rgba(232,96,28,.55);
+  --radius:        16px;
+  --transition:    .7s cubic-bezier(.4,0,.2,1);
+}
+
+html, body {
+  height: 100%;
+  background: var(--clr-bg);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: var(--clr-text);
+  overflow: hidden;
+}
+
+/* ─── Animated background particles ─── */
+.bg-particles {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none; overflow: hidden;
+}
+.bg-particles span {
+  position: absolute;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--clr-accent);
+  opacity: 0;
+  animation: float-up linear infinite;
+}
+@keyframes float-up {
+  0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+  10%  { opacity: .6; }
+  90%  { opacity: .3; }
+  100% { transform: translateY(-120px) scale(1); opacity: 0; }
+}
+
+/* ─── Page centerer ─── */
+.page-wrap {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+
+/* ─── Outer container (glowing border) ─── */
+.container {
+  position: relative;
+  width: 100%; max-width: 780px;
+  height: 440px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1.5px solid var(--clr-border);
+  box-shadow: 0 0 28px var(--clr-glow), inset 0 0 40px rgba(232,96,28,.06);
+  background: var(--clr-panel);
+}
+
+/* ─── Diagonal accent panel (right side default = login) ─── */
+.accent-panel {
+  position: absolute; inset: 0;
+  /* clip-path creates the diagonal: top-right triangle */
+  clip-path: polygon(55% 0, 100% 0, 100% 100%, 40% 100%);
+  background: linear-gradient(145deg, #c4521a 0%, #e07830 40%, #d06020 70%, #a04010 100%);
+  transition: clip-path .9s cubic-bezier(.4,0,.2,1);
+  z-index: 0;
+}
+/* When register is active the accent moves to left */
+.container.register-active .accent-panel {
+  clip-path: polygon(0 0, 60% 0, 45% 100%, 0 100%);
+}
+
+/* subtle texture overlay on accent */
+.accent-panel::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 40px,
+    rgba(0,0,0,.07) 40px,
+    rgba(0,0,0,.07) 80px
+  );
+}
+
+/* ─── Welcome text (shown inside accent panel) ─── */
+.welcome-block {
+  position: absolute; z-index: 1;
+  top: 50%; transform: translateY(-50%);
+  width: 42%;
+  text-align: center;
+  padding: 0 24px;
+  /* default: right side */
+  right: 4%;
+  transition: right .9s cubic-bezier(.4,0,.2,1),
+              left .9s cubic-bezier(.4,0,.2,1),
+              opacity var(--transition);
+  opacity: 1;
+}
+.welcome-block h2 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.welcome-block p {
+  font-size: .88rem;
+  color: rgba(255,255,255,.82);
+  line-height: 1.55;
+}
+
+/* login-welcome → right; register-welcome → left */
+.welcome-login { /* shown when login active */ }
+.welcome-register { position: absolute; top: 50%; transform: translateY(-50%); left: 4%; width: 42%; text-align: center; padding: 0 24px; opacity: 0; transition: opacity var(--transition); pointer-events: none; }
+.container.register-active .welcome-login { opacity: 0; pointer-events: none; }
+.container.register-active .welcome-register { opacity: 1; pointer-events: auto; }
+
+/* ─── Form boxes (Login & Register) ─── */
+.form-box {
+  position: absolute; z-index: 2;
+  top: 0; bottom: 0;
+  width: 52%;
+  display: flex; flex-direction: column;
+  justify-content: center;
+  padding: 40px 36px;
+  transition: transform var(--transition), opacity var(--transition), filter var(--transition);
+}
+.form-box.login  { left: 0; }
+.form-box.register { right: 0; transform: translateX(120%); opacity: 0; filter: blur(8px); }
+
+.container.register-active .form-box.login    { transform: translateX(-120%); opacity: 0; filter: blur(8px); }
+.container.register-active .form-box.register { transform: translateX(0);      opacity: 1; filter: blur(0);   }
+
+/* ─── Staggered child animation ─── */
+.form-box .anim {
+  --li: 0;
+  opacity: 0;
+  transform: translateY(18px);
+  filter: blur(4px);
+  transition: opacity .55s ease, transform .55s ease, filter .55s ease;
+  transition-delay: calc(.08s * var(--li));
+}
+.container.login-active  .form-box.login    .anim,
+.container.register-active .form-box.register .anim {
+  opacity: 1; transform: translateY(0); filter: blur(0);
+}
+
+/* ─── Form typography ─── */
+.form-box h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: #fff;
+}
+
+/* ─── Input group ─── */
+.input-group {
+  position: relative;
+  margin-bottom: 16px;
+}
+.input-group label {
+  display: block;
+  font-size: .78rem;
+  color: var(--clr-text-dim);
+  margin-bottom: 5px;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  transition: color .3s;
+}
+.input-group:focus-within label { color: var(--clr-accent2); }
+
+.input-group input {
+  width: 100%;
+  background: var(--clr-input-bg);
+  border: none;
+  border-bottom: 1.5px solid rgba(255,255,255,.15);
+  padding: 10px 34px 10px 8px;
+  color: #fff;
+  font-size: .92rem;
+  outline: none;
+  transition: border-color .3s, background .3s;
+  border-radius: 0 0 4px 4px;
+}
+.input-group input::placeholder { color: rgba(255,255,255,.3); }
+.input-group input:focus {
+  border-bottom-color: var(--clr-accent2);
+  background: rgba(255,255,255,.07);
+}
+/* icon inside input */
+.input-group .icon {
+  position: absolute; right: 8px; top: calc(50% + 4px);
+  transform: translateY(-50%);
+  color: var(--clr-text-dim);
+  font-size: .88rem;
+  pointer-events: none;
+  transition: color .3s;
+}
+.input-group:focus-within .icon { color: var(--clr-accent2); }
+
+/* validation styles */
+.input-group input.invalid { border-bottom-color: #e04444; }
+.input-group input.valid   { border-bottom-color: #44c97a; }
+.input-group .err-msg {
+  font-size: .72rem; color: #e04444;
+  margin-top: 3px; min-height: 14px;
+  animation: shake .35s ease;
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25%     { transform: translateX(-6px); }
+  75%     { transform: translateX(6px); }
+}
+
+/* ─── CTA Button ─── */
+.btn-submit {
+  width: 100%;
+  padding: 11px 0;
+  margin-top: 6px;
+  border: none;
+  border-radius: 30px;
+  background: linear-gradient(90deg, var(--clr-accent), var(--clr-accent2));
+  color: #fff;
+  font-size: .95rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: .6px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow .3s, transform .15s;
+}
+.btn-submit:hover  { box-shadow: 0 4px 20px rgba(232,96,28,.5); }
+.btn-submit:active { transform: scale(.96); }
+
+/* ripple */
+.btn-submit .ripple {
+  position: absolute; border-radius: 50%;
+  background: rgba(255,255,255,.35);
+  width: 0; height: 0;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  animation: ripple-anim .6s ease-out forwards;
+}
+@keyframes ripple-anim {
+  to { width: 360px; height: 360px; opacity: 0; }
+}
+
+/* ─── Loading spinner overlay inside button ─── */
+.btn-submit .spinner {
+  display: none;
+  width: 22px; height: 22px;
+  border: 2.5px solid rgba(255,255,255,.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .55s linear infinite;
+  margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.btn-submit.loading .btn-text { display: none; }
+.btn-submit.loading .spinner  { display: block; }
+
+/* ─── Toggle link ─── */
+.toggle-wrap {
+  text-align: center;
+  margin-top: 18px;
+  font-size: .82rem;
+  color: var(--clr-text-dim);
+}
+.toggle-wrap a {
+  color: var(--clr-accent2);
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color .25s;
+}
+.toggle-wrap a:hover { color: #fff; text-decoration: underline; }
+
+/* ─── Toast / message ─── */
+.toast {
+  position: fixed; top: 32px; left: 50%; transform: translateX(-50%) translateY(-120px);
+  z-index: 999;
+  background: var(--clr-panel);
+  border: 1px solid var(--clr-border);
+  border-radius: 12px;
+  padding: 14px 28px;
+  font-size: .88rem;
+  color: #fff;
+  box-shadow: 0 6px 24px rgba(0,0,0,.4);
+  transition: transform .45s cubic-bezier(.4,0,.2,1);
+  display: flex; align-items: center; gap: 10px;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.success .toast-icon { color: #44c97a; }
+.toast.error   .toast-icon { color: #e04444; }
+.toast .toast-icon { font-size: 1.1rem; }
+
+/* ─── Mobile ─── */
+@media (max-width: 640px) {
+  .container { height: auto; min-height: 520px; }
+  .accent-panel { clip-path: polygon(0 78%, 100% 72%, 100% 100%, 0 100%); transition: clip-path .9s cubic-bezier(.4,0,.2,1); }
+  .container.register-active .accent-panel { clip-path: polygon(0 0, 100% 0, 100% 28%, 0 22%); }
+  .welcome-block, .welcome-register { position: absolute; width: 100%; text-align: center; top: auto; bottom: 22px; right: 0; left: 0; padding: 0 20px; transform: none; }
+  .welcome-register { top: 14px; bottom: auto; }
+  .form-box { position: relative; width: 100%; padding: 36px 24px 24px; }
+  .form-box.register { transform: translateX(0); opacity: 1; filter: none; display: none; }
+  .container.register-active .form-box.login    { transform: none; opacity: 1; filter: none; display: none; }
+  .container.register-active .form-box.register { display: flex; }
+  .container.login-active .form-box.login .anim,
+  .container.register-active .form-box.register .anim { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+</style>
+</head>
+<body>
+
+<!-- Floating particles -->
+<div class="bg-particles" id="particles"></div>
+
+<div class="page-wrap">
+  <div class="container login-active" id="mainContainer">
+
+    <!-- Diagonal accent panel -->
+    <div class="accent-panel"></div>
+
+    <!-- Welcome text blocks -->
+    <div class="welcome-block welcome-login">
+      <h2>Welcome<br>Back!</h2>
+      <p>We are happy to have you with us again. If you need anything, we are here to help.</p>
+    </div>
+    <div class="welcome-block welcome-register">
+      <h2>Welcome!</h2>
+      <p>We're delighted to have you here. If you need any assistance, feel free to reach out.</p>
+    </div>
+
+    <!-- ── Login Form ── -->
+    <div class="form-box login" aria-label="Login form">
+      <h1 class="anim" style="--li:0">Login</h1>
+
+      <div class="input-group anim" style="--li:1">
+        <label for="login-username">Username</label>
+        <input type="text" id="login-username" placeholder="Enter username" autocomplete="username" aria-required="true" />
+        <i class="fas fa-user icon"></i>
+        <div class="err-msg" id="login-username-err"></div>
+      </div>
+
+      <div class="input-group anim" style="--li:2">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password" aria-required="true" />
+        <i class="fas fa-lock icon"></i>
+        <div class="err-msg" id="login-password-err"></div>
+      </div>
+
+      <button class="btn-submit anim" style="--li:3" id="loginBtn" aria-label="Login">
+        <span class="btn-text">Login</span>
+        <span class="spinner"></span>
+      </button>
+
+      <div class="toggle-wrap anim" style="--li:4">
+        Don't have an account?&nbsp;<a id="toRegister" tabindex="0" role="button">Sign Up</a>
+      </div>
+    </div>
+
+    <!-- ── Register Form ── -->
+    <div class="form-box register" aria-label="Register form">
+      <h1 class="anim" style="--li:0">Register</h2>
+
+      <div class="input-group anim" style="--li:1">
+        <label for="reg-name">Full Name</label>
+        <input type="text" id="reg-name" placeholder="Your name" autocomplete="name" aria-required="true" />
+        <i class="fas fa-user icon"></i>
+        <div class="err-msg" id="reg-name-err"></div>
+      </div>
+
+      <div class="input-group anim" style="--li:2">
+        <label for="reg-email">Email</label>
+        <input type="email" id="reg-email" placeholder="you@email.com" autocomplete="email" aria-required="true" />
+        <i class="fas fa-envelope icon"></i>
+        <div class="err-msg" id="reg-email-err"></div>
+      </div>
+
+      <div class="input-group anim" style="--li:3">
+        <label for="reg-password">Password</label>
+        <input type="password" id="reg-password" placeholder="Create password" autocomplete="new-password" aria-required="true" />
+        <i class="fas fa-lock icon"></i>
+        <div class="err-msg" id="reg-password-err"></div>
+      </div>
+
+      <div class="input-group anim" style="--li:4">
+        <label for="reg-confirm">Confirm Password</label>
+        <input type="password" id="reg-confirm" placeholder="Repeat password" autocomplete="new-password" aria-required="true" />
+        <i class="fas fa-lock icon"></i>
+        <div class="err-msg" id="reg-confirm-err"></div>
+      </div>
+
+      <button class="btn-submit anim" style="--li:5" id="registerBtn" aria-label="Register">
+        <span class="btn-text">Register</span>
+        <span class="spinner"></span>
+      </button>
+
+      <div class="toggle-wrap anim" style="--li:6">
+        Already have an account?&nbsp;<a id="toLogin" tabindex="0" role="button">Sign In</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast" role="alert" aria-live="assertive">
+  <i class="toast-icon fas fa-check-circle"></i>
+  <span id="toast-msg">Success!</span>
+</div>
+
+<script>
+(function(){
+  // ── Particles ──
+  const particlesEl = document.getElementById('particles');
+  for(let i=0; i<28; i++){
+    const s = document.createElement('span');
+    s.style.cssText = `
+      left:${Math.random()*100}%;
+      animation-duration:${6+Math.random()*10}s;
+      animation-delay:${Math.random()*8}s;
+      width:${1.5+Math.random()*2.5}px;
+      height:${1.5+Math.random()*2.5}px;
+      opacity:.0;
+    `;
+    particlesEl.appendChild(s);
+  }
+
+  // ── DOM refs ──
+  const container = document.getElementById('mainContainer');
+  const toRegister = document.getElementById('toRegister');
+  const toLogin    = document.getElementById('toLogin');
+  const toast      = document.getElementById('toast');
+  const toastMsg   = document.getElementById('toast-msg');
+  const toastIcon  = toast.querySelector('.toast-icon');
+
+  // ── Toggle forms ──
+  function switchTo(mode){
+    // trigger stagger reset: briefly remove active so children re-animate
+    container.classList.remove('login-active','register-active');
+    void container.offsetWidth; // reflow
+    container.classList.add(mode === 'register' ? 'register-active' : 'login-active');
+  }
+
+  toRegister.addEventListener('click', ()=> switchTo('register'));
+  toRegister.addEventListener('keydown', e=>{ if(e.key==='Enter') switchTo('register'); });
+  toLogin.addEventListener('click',    ()=> switchTo('login'));
+  toLogin.addEventListener('keydown',  e=>{ if(e.key==='Enter') switchTo('login'); });
+
+  // init stagger
+  switchTo('login');
+
+  // ── Toast ──
+  let toastTimer;
+  function showToast(msg, type='success'){
+    toastMsg.textContent = msg;
+    toast.className = 'toast ' + type;
+    toastIcon.className = 'toast-icon fas ' + (type==='success' ? 'fa-check-circle' : 'fa-exclamation-circle');
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toast.classList.remove('show'), 3200);
+  }
+
+  // ── Ripple ──
+  document.querySelectorAll('.btn-submit').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const r = document.createElement('span');
+      r.className = 'ripple';
+      btn.appendChild(r);
+      setTimeout(()=> r.remove(), 600);
+    });
+  });
+
+  // ── Validation helpers ──
+  function setValid(input, valid){
+    input.classList.toggle('valid', valid);
+    input.classList.toggle('invalid', !valid);
+  }
+  function getErr(id){ return document.getElementById(id); }
+  function showErr(id, msg){ const el = getErr(id); if(el){ el.textContent=msg; } }
+  function clearErr(id){ showErr(id,''); }
+
+  // live-clear error on input
+  ['login-username','login-password','reg-name','reg-email','reg-password','reg-confirm'].forEach(id=>{
+    const inp = document.getElementById(id);
+    inp.addEventListener('input', ()=>{
+      inp.classList.remove('invalid','valid');
+      clearErr(id+'-err');
+    });
+  });
+
+  // ── Login validation & submit ──
+  document.getElementById('loginBtn').addEventListener('click', function(e){
+    e.preventDefault();
+    const usr = document.getElementById('login-username');
+    const pwd = document.getElementById('login-password');
+    let ok = true;
+
+    if(!usr.value.trim()){ setValid(usr,false); showErr('login-username-err','Username is required'); ok=false; }
+    else { setValid(usr,true); clearErr('login-username-err'); }
+
+    if(!pwd.value.trim()){ setValid(pwd,false); showErr('login-password-err','Password is required'); ok=false; }
+    else if(pwd.value.length<4){ setValid(pwd,false); showErr('login-password-err','Min 4 characters'); ok=false; }
+    else { setValid(pwd,true); clearErr('login-password-err'); }
+
+    if(!ok) return;
+
+    // mock loading
+    const btn = this;
+    btn.classList.add('loading');
+    btn.disabled = true;
+    setTimeout(()=>{
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      setValid(usr,false); setValid(pwd,false);
+      usr.value=''; pwd.value='';
+      showToast('Logged in successfully!', 'success');
+    }, 1800);
+  });
+
+  // ── Register validation & submit ──
+  document.getElementById('registerBtn').addEventListener('click', function(e){
+    e.preventDefault();
+    const name  = document.getElementById('reg-name');
+    const email = document.getElementById('reg-email');
+    const pwd   = document.getElementById('reg-password');
+    const conf  = document.getElementById('reg-confirm');
+    let ok = true;
+
+    // name
+    if(!name.value.trim()){ setValid(name,false); showErr('reg-name-err','Name is required'); ok=false; }
+    else { setValid(name,true); clearErr('reg-name-err'); }
+
+    // email
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!email.value.trim()){ setValid(email,false); showErr('reg-email-err','Email is required'); ok=false; }
+    else if(!emailRe.test(email.value)){ setValid(email,false); showErr('reg-email-err','Invalid email'); ok=false; }
+    else { setValid(email,true); clearErr('reg-email-err'); }
+
+    // password
+    if(!pwd.value){ setValid(pwd,false); showErr('reg-password-err','Password is required'); ok=false; }
+    else if(pwd.value.length<6){ setValid(pwd,false); showErr('reg-password-err','Min 6 characters'); ok=false; }
+    else { setValid(pwd,true); clearErr('reg-password-err'); }
+
+    // confirm
+    if(!conf.value){ setValid(conf,false); showErr('reg-confirm-err','Please confirm password'); ok=false; }
+    else if(conf.value!==pwd.value){ setValid(conf,false); showErr('reg-confirm-err','Passwords don\'t match'); ok=false; }
+    else { setValid(conf,true); clearErr('reg-confirm-err'); }
+
+    if(!ok) return;
+
+    const btn = this;
+    btn.classList.add('loading');
+    btn.disabled = true;
+    setTimeout(()=>{
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      [name,email,pwd,conf].forEach(i=>{ i.value=''; i.classList.remove('valid','invalid'); });
+      showToast('Account created successfully!', 'success');
+      setTimeout(()=> switchTo('login'), 1200);
+    }, 2000);
+  });
+
+})();
+</script>
+</body>
+</html>
